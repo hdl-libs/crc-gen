@@ -20,25 +20,26 @@
 // verilog_format: on
 
 module crc16_8_1021 #(
-    parameter INPUT_WIDTH = 8,
+    parameter INPUT_WIDTH  = 8,
     parameter OUTPUT_WIDTH = 16,
-    parameter INIT = 16'hFFFF,
-    parameter OUTPUT_XOR = 16'hFFFF,
-    parameter INPUT_INV = 1'b1,
-    parameter OUTPUT_INV = 1'b1
+    parameter INIT         = 16'hFFFF,
+    parameter OUTPUT_XOR   = 16'h0000,
+    parameter INPUT_INV    = 1'b0,
+    parameter OUTPUT_INV   = 1'b0
 ) (
-    input  wire [ 7:0] data_in,
-    input  wire        crc_en,
-    output wire [15:0] crc_out,
-    input  wire        rst,
-    input  wire        clk
+    input  wire [ (INPUT_WIDTH-1):0] data_in,
+    input  wire                      crc_en,
+    output wire [(OUTPUT_WIDTH-1):0] crc_out,
+    input  wire                      rst,
+    input  wire                      clk
 );
     genvar ii;
     wire [ (INPUT_WIDTH-1):0] data_in_inv;
     wire [ (INPUT_WIDTH-1):0] data_in_inv_res;
     wire [(OUTPUT_WIDTH-1):0] crc_out_inv;
     wire [(OUTPUT_WIDTH-1):0] crc_out_inv_res;
-    reg [15:0] lfsr_q, lfsr_c;
+    reg  [(OUTPUT_WIDTH-1):0] lfsr_q;
+    reg  [(OUTPUT_WIDTH-1):0] lfsr_c;
 
     generate
         for (ii = 0; ii < INPUT_WIDTH; ii = ii + 1) begin
