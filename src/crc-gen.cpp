@@ -26,7 +26,6 @@ OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH
 THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
-#include "stdafx.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -266,21 +265,23 @@ void print_verilog_crc(int lfsr_poly_size,
                        unsigned int *lfsr_matrix)
 {
     fprintf(stdout, "\n//-----------------------------------------------------------------------------");
-    fprintf(stdout, "\n// Copyright (C) 2009 OutputLogic.com ");
-    fprintf(stdout, "\n// This source file may be used and distributed without restriction ");
-    fprintf(stdout, "\n// provided that this copyright statement is not removed from the file ");
-    fprintf(stdout, "\n// and that any derivative work contains the original copyright notice ");
-    fprintf(stdout, "\n// and the associated disclaimer.    ");
-    fprintf(stdout, "\n// THIS SOURCE FILE IS PROVIDED \"AS IS\" AND WITHOUT ANY EXPRESS ");
+    fprintf(stdout, "\n// Copyright (C) 2009 OutputLogic.com");
+    fprintf(stdout, "\n// This source file may be used and distributed without restriction");
+    fprintf(stdout, "\n// provided that this copyright statement is not removed from the file");
+    fprintf(stdout, "\n// and that any derivative work contains the original copyright notice");
+    fprintf(stdout, "\n// and the associated disclaimer.");
+    fprintf(stdout, "\n// THIS SOURCE FILE IS PROVIDED \"AS IS\" AND WITHOUT ANY EXPRESS");
     fprintf(stdout, "\n// OR IMPLIED WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED	");
-    fprintf(stdout, "\n// WARRANTIES OF MERCHANTIBILITY AND FITNESS FOR A PARTICULAR PURPOSE. ");
+    fprintf(stdout, "\n// WARRANTIES OF MERCHANTIBILITY AND FITNESS FOR A PARTICULAR PURPOSE.");
     fprintf(stdout, "\n//-----------------------------------------------------------------------------\n");
 
     int N = lfsr_poly_size;
     int M = num_data_bits;
     int n1, n2, m1;
 
-    fprintf(stdout, "// CRC module for\n//\t data[%d:0]\n//\t crc[%d:0]=", num_data_bits - 1, lfsr_poly_size - 1);
+    fprintf(stdout, "// CRC module for\n");
+    fprintf(stdout, "//    data[%d:0]\n", num_data_bits - 1);
+    fprintf(stdout, "//    crc[%d:0]=", lfsr_poly_size - 1);
 
     for (int l = 0; l < lfsr_poly_size; l++)
     {
@@ -294,19 +295,13 @@ void print_verilog_crc(int lfsr_poly_size,
     }
     fprintf(stdout, "+x^%d;\n\n", lfsr_poly_size);
 
-    fprintf(stdout, "// verilog_format: off\n");
-    fprintf(stdout, "`resetall\n");
-    fprintf(stdout, "`timescale 1ns / 1ps\n");
-    fprintf(stdout, "`default_nettype none\n");
-    fprintf(stdout, "// verilog_format: on\n");
-
     fprintf(stdout, "\n");
 
     fprintf(stdout, "module crc #(\n");
     fprintf(stdout, "    parameter INPUT_WIDTH  = %d,\n", num_data_bits);
     fprintf(stdout, "    parameter OUTPUT_WIDTH = %d,\n", lfsr_poly_size);
-    fprintf(stdout, "    parameter INIT         = 16'h0000,\n");
-    fprintf(stdout, "    parameter OUTPUT_XOR   = 16'h0000,\n");
+    fprintf(stdout, "    parameter INIT         = {%d{1'b1}},\n",lfsr_poly_size);
+    fprintf(stdout, "    parameter OUTPUT_XOR   = {%d{1'b0}},\n",lfsr_poly_size);
     fprintf(stdout, "    parameter INPUT_INV    = 1'b0,\n");
     fprintf(stdout, "    parameter OUTPUT_INV   = 1'b0\n");
     fprintf(stdout, ") (\n");
@@ -349,13 +344,13 @@ void print_verilog_crc(int lfsr_poly_size,
 
     fprintf(stdout, "\n");
 
-    fprintf(stdout, "\talways @(*) begin");
+    fprintf(stdout, "    always @(*) begin");
 
     // print columns of LFSR[(N+M)xN] matrix
     // go thru each column[n2]
     for (n2 = 0; n2 < N; n2++)
     {
-        fprintf(stdout, "\n\t\tlfsr_c[%d] = ", n2);
+        fprintf(stdout, "\n        lfsr_c[%d] = ", n2);
         bool is_first = true;
 
         for (n1 = 0; n1 < N; n1++)
@@ -380,39 +375,29 @@ void print_verilog_crc(int lfsr_poly_size,
             {
                 if (is_first)
                 {
-                    fprintf(stdout, "data_in[%d]", m1);
+                    fprintf(stdout, "data_in_inv_res[%d]", m1);
                     is_first = false;
                 }
                 else
                 {
-                    fprintf(stdout, " ^ data_in[%d]", m1);
+                    fprintf(stdout, " ^ data_in_inv_res[%d]", m1);
                 }
             }
         }
 
         fprintf(stdout, ";");
     }
+    fprintf(stdout, "\n    end // always\n\n");
 
-    fprintf(stdout, "\n");
-
-    fprintf(stdout, "\n\tend // always\n\n");
-
-    fprintf(stdout, "\talways @(posedge clk, posedge rst) begin\n");
-    fprintf(stdout, "\t\tif(rst) begin\n");
-    fprintf(stdout, "\t\t\tlfsr_q  <= {%d{1'b1}};\n", lfsr_poly_size);
-    fprintf(stdout, "\t\tend\n");
-
-    fprintf(stdout, "\t\telse begin\n");
-    fprintf(stdout, "\t\t\tlfsr_q  <= crc_en ? lfsr_c : lfsr_q;\n", lfsr_poly_size);
-    fprintf(stdout, "\t\tend\n");
-    fprintf(stdout, "\tend // always\n");
+    fprintf(stdout, "    always @(posedge clk, posedge rst) begin\n");
+    fprintf(stdout, "        if (rst) begin\n");
+    fprintf(stdout, "            lfsr_q <= INIT;\n", lfsr_poly_size);
+    fprintf(stdout, "        end else begin\n");
+    fprintf(stdout, "            lfsr_q <= crc_en ? lfsr_c : lfsr_q;\n", lfsr_poly_size);
+    fprintf(stdout, "        end\n");
+    fprintf(stdout, "    end // always\n");
     fprintf(stdout, "endmodule // crc\n");
-
     fprintf(stdout, "\n");
-
-    fprintf(stdout, "// verilog_format: off\n");
-    fprintf(stdout, "`resetall\n");
-    fprintf(stdout, "// verilog_format: on\n");
 
 } // print_verilog_crc
 
@@ -466,17 +451,19 @@ void print_vhdl_crc(int lfsr_poly_size,
     int n1, n2, m1;
 
     fprintf(stdout, "\n-------------------------------------------------------------------------------");
-    fprintf(stdout, "\n-- Copyright (C) 2009 OutputLogic.com ");
-    fprintf(stdout, "\n-- This source file may be used and distributed without restriction ");
-    fprintf(stdout, "\n-- provided that this copyright statement is not removed from the file ");
-    fprintf(stdout, "\n-- and that any derivative work contains the original copyright notice ");
-    fprintf(stdout, "\n-- and the associated disclaimer.   ");
-    fprintf(stdout, "\n-- THIS SOURCE FILE IS PROVIDED \"AS IS\" AND WITHOUT ANY EXPRESS ");
-    fprintf(stdout, "\n-- OR IMPLIED WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED	");
-    fprintf(stdout, "\n-- WARRANTIES OF MERCHANTIBILITY AND FITNESS FOR A PARTICULAR PURPOSE. ");
+    fprintf(stdout, "\n-- Copyright (C) 2009 OutputLogic.com");
+    fprintf(stdout, "\n-- This source file may be used and distributed without restriction");
+    fprintf(stdout, "\n-- provided that this copyright statement is not removed from the file");
+    fprintf(stdout, "\n-- and that any derivative work contains the original copyright notice");
+    fprintf(stdout, "\n-- and the associated disclaimer.");
+    fprintf(stdout, "\n-- THIS SOURCE FILE IS PROVIDED \"AS IS\" AND WITHOUT ANY EXPRESS");
+    fprintf(stdout, "\n-- OR IMPLIED WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED");
+    fprintf(stdout, "\n-- WARRANTIES OF MERCHANTIBILITY AND FITNESS FOR A PARTICULAR PURPOSE.");
     fprintf(stdout, "\n-------------------------------------------------------------------------------\n");
 
-    fprintf(stdout, "// CRC module for\n//\t data(%d:0)\n//\t crc(%d:0)=", num_data_bits - 1, lfsr_poly_size - 1);
+    fprintf(stdout, "-- CRC module for\n");
+    fprintf(stdout, "--    data(%d:0)\n", num_data_bits - 1);
+    fprintf(stdout, "--    crc(%d:0)=", lfsr_poly_size - 1);
 
     for (int l = 0; l < lfsr_poly_size; l++)
     {
@@ -488,24 +475,55 @@ void print_vhdl_crc(int lfsr_poly_size,
                 fprintf(stdout, "1");
         }
     }
-    fprintf(stdout, "+x^%d;\n//\n", lfsr_poly_size);
+    fprintf(stdout, "+x^%d;\n\n", lfsr_poly_size);
 
     fprintf(stdout, "library ieee;                   \n");
     fprintf(stdout, "use ieee.std_logic_1164.all;    \n");
     fprintf(stdout, "\n-------------------------------------------------------------------------------\n");
 
-    fprintf(stdout, "entity crc is \n");
-    fprintf(stdout, "   port ( data_in : in  std_logic_vector (%d downto 0);\n", num_data_bits - 1);
-    fprintf(stdout, "      crc_en , rst, clk : in  std_logic;\n");
-    fprintf(stdout, "      crc_out : out  std_logic_vector (%d downto 0));\n", lfsr_poly_size - 1);
-    fprintf(stdout, "end crc;\n\n");
+    fprintf(stdout, "entity crc is\n");
+    fprintf(stdout, "    generic (\n");
+    fprintf(stdout, "        INPUT_WIDTH  : integer := %d;\n", num_data_bits);
+    fprintf(stdout, "        OUTPUT_WIDTH : integer := %d;\n", lfsr_poly_size);
+    fprintf(stdout, "        INIT         : std_logic_vector(%d downto 0) := (others => '1');\n", lfsr_poly_size - 1);
+    fprintf(stdout, "        OUTPUT_XOR   : std_logic_vector(%d downto 0) := (others => '0');\n", lfsr_poly_size - 1);
+    fprintf(stdout, "        INPUT_INV    : std_logic := '0';\n");
+    fprintf(stdout, "        OUTPUT_INV   : std_logic := '0'\n");
+    fprintf(stdout, "    );\n");
+    fprintf(stdout, "    port (\n");
+    fprintf(stdout, "        data_in : in  std_logic_vector((INPUT_WIDTH-1) downto 0);\n");
+    fprintf(stdout, "        crc_en  : in  std_logic;\n");
+    fprintf(stdout, "        crc_out : out std_logic_vector((OUTPUT_WIDTH-1) downto 0);\n");
+    fprintf(stdout, "        rst     : in  std_logic;\n");
+    fprintf(stdout, "        clk     : in  std_logic\n");
+    fprintf(stdout, "    );\n");
+    fprintf(stdout, "end entity crc;\n");
 
     fprintf(stdout, "architecture imp_crc of crc is	 \n");
-    fprintf(stdout, "    signal lfsr_q: std_logic_vector (%d downto 0);	\n", lfsr_poly_size - 1);
-    fprintf(stdout, "    signal lfsr_c: std_logic_vector (%d downto 0);	\n", lfsr_poly_size - 1);
-    fprintf(stdout, " begin	                                                      ");
+    fprintf(stdout, "    signal data_in_inv      : std_logic_vector((INPUT_WIDTH-1) downto 0);\n");
+    fprintf(stdout, "    signal data_in_inv_res  : std_logic_vector((INPUT_WIDTH-1) downto 0);\n");
+    fprintf(stdout, "    signal crc_out_inv      : std_logic_vector((OUTPUT_WIDTH-1) downto 0);\n");
+    fprintf(stdout, "    signal crc_out_inv_res  : std_logic_vector((OUTPUT_WIDTH-1) downto 0);\n");
+    fprintf(stdout, "    signal lfsr_q           : std_logic_vector((OUTPUT_WIDTH-1) downto 0);\n");
+    fprintf(stdout, "    signal lfsr_c           : std_logic_vector((OUTPUT_WIDTH-1) downto 0);\n");
+    fprintf(stdout, "begin\n\n");
 
-    fprintf(stdout, "\n    crc_out <= lfsr_q;\n");
+    fprintf(stdout, "    -- input reverse\n");
+    fprintf(stdout, "    gen_data_in_inv: for ii in 0 to INPUT_WIDTH-1 generate\n");
+    fprintf(stdout, "        data_in_inv(ii) <= data_in(INPUT_WIDTH-ii-1);\n");
+    fprintf(stdout, "    end generate gen_data_in_inv;\n");
+    fprintf(stdout, "\n");
+    fprintf(stdout, "    -- output reverse\n");
+    fprintf(stdout, "    gen_crc_out_inv: for ii in 0 to OUTPUT_WIDTH-1 generate\n");
+    fprintf(stdout, "        crc_out_inv(ii) <= lfsr_q(OUTPUT_WIDTH-ii-1);\n");
+    fprintf(stdout, "    end generate gen_crc_out_inv;\n");
+    fprintf(stdout, "\n");
+    fprintf(stdout, "    -- input reverse\n");
+    fprintf(stdout, "    data_in_inv_res <= data_in_inv when INPUT_INV = '1' else data_in;\n");
+    fprintf(stdout, "    -- output reverse\n");
+    fprintf(stdout, "    crc_out_inv_res <= crc_out_inv when OUTPUT_INV = '1' else lfsr_q;\n");
+    fprintf(stdout, "    -- output xor\n");
+    fprintf(stdout, "    crc_out <= crc_out_inv_res xor OUTPUT_XOR;\n");
 
     // print columns of LFSR[(N+M)xN] matrix
     // go thru each column
@@ -537,13 +555,13 @@ void print_vhdl_crc(int lfsr_poly_size,
             {
                 if (is_first)
                 {
-                    fprintf(stdout, "data_in(%d)", m1);
+                    fprintf(stdout, "data_in_inv_res(%d)", m1);
 
                     is_first = false;
                 }
                 else
                 {
-                    fprintf(stdout, " xor data_in(%d)", m1);
+                    fprintf(stdout, " xor data_in_inv_res(%d)", m1);
                 }
             }
         }
@@ -553,24 +571,17 @@ void print_vhdl_crc(int lfsr_poly_size,
 
     fprintf(stdout, "\n\n");
 
-    fprintf(stdout, "\n\n   process (clk,rst)  begin \n");
-    fprintf(stdout, "    if (rst = '1') then \n");
-
-    fprintf(stdout, "     lfsr_q   <= b\"");
-    for (int j = 0; j < lfsr_poly_size; j++)
-    {
-        fprintf(stdout, "1");
-    }
-
-    fprintf(stdout, "\";\n");
-
-    fprintf(stdout, "     elsif (clk'EVENT and clk = '1') then \n");
-
-    fprintf(stdout, "       if (crc_en = '1') then \n");
-    fprintf(stdout, "         lfsr_q <= lfsr_c; \n");
-    fprintf(stdout, "       end if; \n");
-    fprintf(stdout, "     end if;  \n");
-    fprintf(stdout, "   end process; \n");
-    fprintf(stdout, " end architecture imp_crc; \n");
+    fprintf(stdout, "    process (clk, rst) begin\n");
+    fprintf(stdout, "        if rst = '1' then\n");
+    fprintf(stdout, "            lfsr_q <= INIT;\n");
+    fprintf(stdout, "        elsif rising_edge(clk) then\n");
+    fprintf(stdout, "            if crc_en = '1' then\n");
+    fprintf(stdout, "                lfsr_q <= lfsr_c;\n");
+    fprintf(stdout, "            else\n");
+    fprintf(stdout, "                null;\n");
+    fprintf(stdout, "            end if;\n");
+    fprintf(stdout, "        end if;\n");
+    fprintf(stdout, "    end process;\n\n");
+    fprintf(stdout, "end architecture imp_crc; \n");
 
 } // print_vhdl_crc
